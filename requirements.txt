@@ -1,0 +1,11 @@
+sentence-transformers
+
+# Data & Vector DB
+dvc[s3]
+chromadb
+pandas
+
+# Application & Utilities
+requests
+streamlit
+tqdm

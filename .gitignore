@@ -1,1 +1,4 @@
-/arxiv_papers.csv
+/data/arxiv_papers.csv
+/data/embeddings.npy
+db/
+venv/
