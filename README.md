@@ -1,5 +1,5 @@
 # Semantic Search Engine for arXiv Papers
-
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://semantic-arxiv-search.streamlit.app/)
 ![Streamlit App Screenshot](images/app_screenshot.jpg)
 
 ## 📖 Overview
