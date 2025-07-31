@@ -1,3 +1,2 @@
-build-essential
-gcc
-g++
+pysqlite3-binary==0.5.2.1
+chromadb==0.4.24
