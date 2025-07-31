@@ -1,4 +1,4 @@
-# sqlite3 monkey-patch for deployment
+# The sqlite3 monkey-patch for deployment
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
@@ -13,8 +13,7 @@ import zipfile
 # --- Startup Script to Fetch Database ---
 DB_DIR = "db"
 DB_ZIP_PATH = "db.zip"
-# IMPORTANT: Replace this with your actual direct download link
-DB_DOWNLOAD_URL = "https://github.com/SakshamVats/semantic-arxiv-search/releases/download/v1.0/db.zip" 
+DB_DOWNLOAD_URL = "YOUR_DIRECT_DOWNLOAD_LINK_HERE" 
 
 if not os.path.exists(DB_DIR):
     with st.spinner("Downloading database... This may take a moment."):
@@ -34,18 +33,30 @@ st.set_page_config(page_title="Semantic arXiv Search", page_icon="🔬", layout=
 def load_model_and_db():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     client = chromadb.PersistentClient(path=DB_DIR)
-    # Use get_or_create_collection for robustness
     collection = client.get_or_create_collection(name="arxiv_papers")
     return model, collection
 
-# Only run the main app logic if the DB exists
 if os.path.exists(DB_DIR):
     MODEL, COLLECTION = load_model_and_db()
 
+    # --- Updated Sidebar ---
     with st.sidebar:
-        st.header("About")
-        st.write("This app performs semantic search on a dataset of recent arXiv papers.")
+        st.header("About This Project")
+        st.write("""
+        This app overcomes the limitations of traditional keyword search. Instead of just matching words, it uses a Sentence Transformer model to understand the *semantic meaning* of your query.
 
+        It finds research papers whose summaries are contextually most similar to what you're asking for, providing more relevant and nuanced results.
+        """)
+        st.write("---")
+        st.header("Tech Stack")
+        st.markdown("""
+        - **Model:** `all-MiniLM-L6-v2`
+        - **Database:** ChromaDB (Vector Store)
+        - **Framework:** Streamlit
+        - **Core Libraries:** PyTorch, Pandas
+        """)
+
+    # --- Main Page ---
     st.title("🔬 Semantic arXiv Search Engine")
 
     with st.form(key="search_form"):
@@ -56,7 +67,7 @@ if os.path.exists(DB_DIR):
         with st.spinner("Searching..."):
             results = COLLECTION.query(
                 query_embeddings=[MODEL.encode(query).tolist()],
-                n_results=10 # Fetch a fixed number of results
+                n_results=10
             )
         
         st.subheader("Search Results")
