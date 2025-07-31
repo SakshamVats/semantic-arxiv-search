@@ -9,3 +9,4 @@ pandas
 requests
 streamlit
 tqdm
+pysqlite3-binary
