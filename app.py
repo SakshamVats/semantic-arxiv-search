@@ -25,7 +25,7 @@ if not os.path.exists(DB_DIR):
             zip_ref.extractall(".")
     os.remove(DB_ZIP_PATH)
     st.success("Database downloaded and ready!")
-    st.experimental_rerun()
+    st.rerun()
 
 # --- Main App ---
 st.set_page_config(page_title="Semantic arXiv Search", page_icon="🔬", layout="wide")
