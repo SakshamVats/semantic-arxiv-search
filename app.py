@@ -1,3 +1,4 @@
+# sqlite3 monkey-patch for deployment
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
@@ -5,92 +6,62 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 import chromadb
 from sentence_transformers import SentenceTransformer
+import os
+import requests
+import zipfile
 
-# --- Page Config ---
-st.set_page_config(
-    page_title="Semantic arXiv Search",
-    page_icon="🔬",
-    layout="wide"
-)
+# --- Startup Script to Fetch Database ---
+DB_DIR = "db"
+DB_ZIP_PATH = "db.zip"
+# IMPORTANT: Replace this with your actual direct download link
+DB_DOWNLOAD_URL = "https://github.com/SakshamVats/semantic-arxiv-search/releases/download/v1.0/db.zip" 
 
-# --- Add Custom Color ---
-st.markdown("""
-<style>
-    /* This changes the primary color of sliders, buttons, etc. */
-    :root {
-        --primary-color: #4F8BF9;
-    }
-    .stButton>button {
-        background-color: var(--primary-color);
-        color: white;
-    }
-</style>
-""", unsafe_allow_html=True)
+if not os.path.exists(DB_DIR):
+    with st.spinner("Downloading database... This may take a moment."):
+        r = requests.get(DB_DOWNLOAD_URL)
+        with open(DB_ZIP_PATH, "wb") as f:
+            f.write(r.content)
+        with zipfile.ZipFile(DB_ZIP_PATH, 'r') as zip_ref:
+            zip_ref.extractall(".")
+    os.remove(DB_ZIP_PATH)
+    st.success("Database downloaded and ready!")
+    st.experimental_rerun()
 
+# --- Main App ---
+st.set_page_config(page_title="Semantic arXiv Search", page_icon="🔬", layout="wide")
 
-# --- Model and DB Loading ---
 @st.cache_resource
 def load_model_and_db():
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    client = chromadb.PersistentClient(path="db")
+    client = chromadb.PersistentClient(path=DB_DIR)
     collection = client.get_collection(name="arxiv_papers")
     return model, collection
 
-MODEL, COLLECTION = load_model_and_db()
+# Only run the main app logic if the DB exists
+if os.path.exists(DB_DIR):
+    MODEL, COLLECTION = load_model_and_db()
 
-# --- Sidebar ---
-with st.sidebar:
-    st.header("About")
-    st.write("""
-    This app performs semantic search on a dataset of recent arXiv papers. 
-    It uses a Sentence Transformer model to understand the meaning behind your query 
-    and finds the most relevant research papers from a ChromaDB vector store.
-    """)
-    st.header("Tech Stack")
-    st.markdown("""
-    - Streamlit
-    - Sentence-Transformers
-    - ChromaDB
-    - Pandas
-    """)
+    with st.sidebar:
+        st.header("About")
+        st.write("This app performs semantic search on a dataset of recent arXiv papers.")
 
-# --- Main Page ---
-st.title("🔬 Semantic arXiv Search Engine")
+    st.title("🔬 Semantic arXiv Search Engine")
 
-# --- Search Form ---
-with st.form(key="search_form"):
-    query = st.text_input(
-        "Enter your research query:",
-        placeholder="e.g., Using transformers for time-series forecasting"
-    )
-    submit_button = st.form_submit_button(label="Search")
+    with st.form(key="search_form"):
+        query = st.text_input("Enter your research query")
+        submit_button = st.form_submit_button(label="Search")
 
-# --- Search Results Logic ---
-if submit_button and query:
-    with st.spinner("Searching for relevant papers..."):
-        results = COLLECTION.query(
-            query_embeddings=[MODEL.encode(query).tolist()],
-            n_results=10
-        )
-
-    st.subheader("Search Results")
-    distances = results['distances'][0]
-
-    min_dist = min(distances) if distances else 0
-    max_dist = max(distances) if distances else 1
-    normalized_distances = [(dist - min_dist) / (max_dist - min_dist) for dist in distances] if (max_dist - min_dist) > 0 else [0 for _ in distances]
-
-    for i, (metadata, norm_dist) in enumerate(zip(results['metadatas'][0], normalized_distances)):
-        relevance = max(0, 1 - norm_dist) * 100
-
-        col1, col2 = st.columns([0.85, 0.15])
-        with col1:
-            st.markdown(f"**{i+1}. {metadata['title']}**")
-        with col2:
-            st.link_button("PDF Link 🔗", metadata['pdf_url'], type="secondary", use_container_width=True)
+    if submit_button and query:
+        with st.spinner("Searching..."):
+            results = COLLECTION.query(
+                query_embeddings=[MODEL.encode(query).tolist()],
+                n_results=10 # Fetch a fixed number of results
+            )
         
-        # Using st.metric for a nicer look
-        st.metric(label="Relevance Score", value=f"{relevance:.1f}%")
-
-        with st.expander("Show Summary"):
-            st.write(metadata['summary'])
+        st.subheader("Search Results")
+        for i, metadata in enumerate(results['metadatas'][0]):
+            st.markdown(f"**{i + 1}. {metadata['title']}**")
+            with st.expander("Show Summary"):
+                st.write(metadata['summary'])
+            st.link_button("PDF Link 🔗", metadata['pdf_url'])
+            st.divider()
