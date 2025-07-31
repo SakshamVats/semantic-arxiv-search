@@ -34,7 +34,8 @@ st.set_page_config(page_title="Semantic arXiv Search", page_icon="🔬", layout=
 def load_model_and_db():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     client = chromadb.PersistentClient(path=DB_DIR)
-    collection = client.get_collection(name="arxiv_papers")
+    # Use get_or_create_collection for robustness
+    collection = client.get_or_create_collection(name="arxiv_papers")
     return model, collection
 
 # Only run the main app logic if the DB exists
