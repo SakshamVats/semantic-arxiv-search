@@ -13,7 +13,7 @@ import zipfile
 # --- Startup Script to Fetch Database ---
 DB_DIR = "db"
 DB_ZIP_PATH = "db.zip"
-DB_DOWNLOAD_URL = "YOUR_DIRECT_DOWNLOAD_LINK_HERE" 
+DB_DOWNLOAD_URL = "https://github.com/SakshamVats/semantic-arxiv-search/releases/download/v1.0/db.zip" 
 
 if not os.path.exists(DB_DIR):
     with st.spinner("Downloading database... This may take a moment."):
